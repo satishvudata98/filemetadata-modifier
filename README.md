@@ -26,9 +26,12 @@ filemetadata-modifier/
 │   ├── package.json   # Frontend dependencies
 │   └── vite.config.js # Vite configuration
 │
-└── backend/           # Node.js backend
-    ├── server.js      # Express server
-    └── package.json   # Backend dependencies
+├── backend/           # Node.js backend
+│   ├── server.js      # Express server
+│   └── package.json   # Backend dependencies
+│
+├── package.json       # Root package.json for managing both frontend and backend
+└── README.md         # Project documentation
 ```
 
 ## Technologies Used
@@ -53,31 +56,27 @@ git clone https://github.com/satishvudata98/filemetadata-modifier.git
 cd filemetadata-modifier
 ```
 
-2. Install backend dependencies:
+2. Install all dependencies (frontend and backend):
 ```bash
-cd backend
-npm install
+npm run install:all
 ```
 
-3. Install frontend dependencies:
+3. Start both frontend and backend servers:
 ```bash
-cd ../frontend
-npm install
-```
-
-4. Start the backend server:
-```bash
-cd ../backend
-npm start
-```
-
-5. Start the frontend development server:
-```bash
-cd ../frontend
 npm run dev
 ```
 
-The application will be available at `http://localhost:5173`
+The application will be available at:
+- Frontend: `http://localhost:5173`
+- Backend: `http://localhost:3001`
+
+## Available Scripts
+
+- `npm run install:all` - Install dependencies for both frontend and backend
+- `npm run dev` - Start both frontend and backend servers concurrently
+- `npm run start:frontend` - Start only the frontend server
+- `npm run start:backend` - Start only the backend server
+- `npm run build` - Build the frontend for production
 
 ## Usage
 
