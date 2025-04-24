@@ -1,140 +1,135 @@
-<script>
+<script setup>
+import { ref, computed } from 'vue';
 import axios from 'axios';
 
-export default {
-  name: 'App',
-  data() {
-    return {
-      filePath: '',
-      comments: '',
-      message: '',
-      messageType: 'success',
-      loading: false,
-      metadata: null,
-      extracting: false,
-      editingComment: null,
-      editText: ''
-    };
-  },
-  computed: {
-    formattedComments() {
-      if (!this.metadata) return '';
-      
-      const commentsText = this.metadata.subject || this.metadata.comments || '';
-      if (!commentsText) return 'No comments';
-      
-      // Split comments by newlines and format each line
-      return commentsText.split('\n\n').map(comment => {
-        // Check if the comment has a timestamp format
-        if (comment.includes(': ')) {
-          const [timestamp, text] = comment.split(': ');
-          return { timestamp, text };
-        }
-        return { timestamp: '', text: comment };
-      });
+// Reactive state
+const filePath = ref('');
+const comments = ref('');
+const message = ref('');
+const messageType = ref('success');
+const loading = ref(false);
+const metadata = ref(null);
+const extracting = ref(false);
+const editingComment = ref(null);
+const editText = ref('');
+
+// Computed properties
+const formattedComments = computed(() => {
+  if (!metadata.value) return '';
+  
+  const commentsText = metadata.value.subject || metadata.value.comments || '';
+  if (!commentsText) return 'No comments';
+  
+  // Split comments by newlines and format each line
+  return commentsText.split('\n\n').map(comment => {
+    // Check if the comment has a timestamp format
+    if (comment.includes(': ')) {
+      const [timestamp, text] = comment.split(': ');
+      return { timestamp, text };
     }
-  },
-  methods: {
-    async handleSubmit() {
-      this.loading = true;
-      this.message = '';
-      
-      try {
-        const response = await axios.post('http://localhost:3001/api/metadata', {
-          filePath: this.filePath,
-          comments: this.comments
-        });
-        
-        this.message = response.data.message;
-        this.messageType = 'success';
-        
-        // After updating, fetch the new metadata
-        await this.extractMetadata();
-        
-        // Clear comments field on success
-        this.comments = '';
-      } catch (error) {
-        this.message = error.response?.data?.message || 'Error: Could not connect to the server';
-        this.messageType = 'error';
-      } finally {
-        this.loading = false;
-      }
-    },
+    return { timestamp: '', text: comment };
+  });
+});
+
+// Methods
+const handleSubmit = async () => {
+  loading.value = true;
+  message.value = '';
+  
+  try {
+    const response = await axios.post('http://localhost:3001/api/metadata', {
+      filePath: filePath.value,
+      comments: comments.value
+    });
     
-    async extractMetadata() {
-      if (!this.filePath) return;
-      
-      this.extracting = true;
-      this.metadata = null;
-      this.editingComment = null;
-      this.editText = '';
-      
-      try {
-        const encodedPath = encodeURIComponent(this.filePath);
-        const response = await axios.get(`http://localhost:3001/api/metadata/${encodedPath}`);
-        this.metadata = response.data.metadata;
-      } catch (error) {
-        console.error('Error extracting metadata:', error);
-      } finally {
-        this.extracting = false;
-      }
-    },
+    message.value = response.data.message;
+    messageType.value = 'success';
     
-    startEditing(index) {
-      this.editingComment = index;
-      this.editText = this.formattedComments[index].text;
-    },
+    // After updating, fetch the new metadata
+    await extractMetadata();
     
-    cancelEditing() {
-      this.editingComment = null;
-      this.editText = '';
-    },
+    // Clear comments field on success
+    comments.value = '';
+  } catch (error) {
+    message.value = error.response?.data?.message || 'Error: Could not connect to the server';
+    messageType.value = 'error';
+  } finally {
+    loading.value = false;
+  }
+};
+
+const extractMetadata = async () => {
+  if (!filePath.value) return;
+  
+  extracting.value = true;
+  metadata.value = null;
+  editingComment.value = null;
+  editText.value = '';
+  
+  try {
+    const encodedPath = encodeURIComponent(filePath.value);
+    const response = await axios.get(`http://localhost:3001/api/metadata/${encodedPath}`);
+    metadata.value = response.data.metadata;
+  } catch (error) {
+    console.error('Error extracting metadata:', error);
+  } finally {
+    extracting.value = false;
+  }
+};
+
+const startEditing = (index) => {
+  editingComment.value = index;
+  editText.value = formattedComments.value[index].text;
+};
+
+const cancelEditing = () => {
+  editingComment.value = null;
+  editText.value = '';
+};
+
+const saveEdit = async (index) => {
+  if (!editText.value.trim()) {
+    message.value = 'Comment cannot be empty';
+    messageType.value = 'error';
+    return;
+  }
+  
+  loading.value = true;
+  message.value = '';
+  
+  try {
+    const encodedPath = encodeURIComponent(filePath.value);
+    const response = await axios.put(`http://localhost:3001/api/metadata/${encodedPath}`, {
+      commentIndex: index,
+      newComment: editText.value
+    });
     
-    async saveEdit(index) {
-      if (!this.editText.trim()) {
-        this.message = 'Comment cannot be empty';
-        this.messageType = 'error';
-        return;
-      }
-      
-      this.loading = true;
-      this.message = '';
-      
-      try {
-        const encodedPath = encodeURIComponent(this.filePath);
-        const response = await axios.put(`http://localhost:3001/api/metadata/${encodedPath}`, {
-          commentIndex: index,
-          newComment: this.editText
-        });
-        
-        this.message = response.data.message;
-        this.messageType = 'success';
-        
-        // After updating, fetch the new metadata
-        await this.extractMetadata();
-      } catch (error) {
-        this.message = error.response?.data?.message || 'Error: Could not update comment';
-        this.messageType = 'error';
-      } finally {
-        this.loading = false;
-      }
-    },
+    message.value = response.data.message;
+    messageType.value = 'success';
     
-    handleFilePathChange() {
-      // Only extract metadata when the user has finished typing
-      if (this.filePath) {
-        this.extractMetadata();
-      } else {
-        this.metadata = null;
-      }
-    },
-    
-    handleKeyPress(event) {
-      // If Enter key is pressed, extract metadata
-      if (event.key === 'Enter') {
-        this.handleFilePathChange();
-      }
-    }
+    // After updating, fetch the new metadata
+    await extractMetadata();
+  } catch (error) {
+    message.value = error.response?.data?.message || 'Error: Could not update comment';
+    messageType.value = 'error';
+  } finally {
+    loading.value = false;
+  }
+};
+
+const handleFilePathChange = () => {
+  // Only extract metadata when the user has finished typing
+  if (filePath.value) {
+    extractMetadata();
+  } else {
+    metadata.value = null;
+  }
+};
+
+const handleKeyPress = (event) => {
+  // If Enter key is pressed, extract metadata
+  if (event.key === 'Enter') {
+    handleFilePathChange();
   }
 };
 </script>
