@@ -118,18 +118,22 @@ export default {
       } finally {
         this.loading = false;
       }
-    }
-  },
-  watch: {
-    filePath: {
-      handler(newPath) {
-        if (newPath) {
-          this.extractMetadata();
-        } else {
-          this.metadata = null;
-        }
-      },
-      debounce: 500
+    },
+    
+    handleFilePathChange() {
+      // Only extract metadata when the user has finished typing
+      if (this.filePath) {
+        this.extractMetadata();
+      } else {
+        this.metadata = null;
+      }
+    },
+    
+    handleKeyPress(event) {
+      // If Enter key is pressed, extract metadata
+      if (event.key === 'Enter') {
+        this.handleFilePathChange();
+      }
     }
   }
 };
@@ -154,6 +158,8 @@ export default {
                 :rules="[v => !!v || 'File path is required']"
                 variant="outlined"
                 class="mb-4"
+                @blur="handleFilePathChange"
+                @keyup="handleKeyPress"
               ></v-text-field>
               
               <!-- Display existing metadata -->
@@ -249,29 +255,29 @@ export default {
                 type="submit"
                 color="primary"
                 block
-                size="large"
                 :loading="loading"
               >
                 Add Comment
               </v-btn>
             </v-form>
             
-            <v-alert
-              v-if="message"
-              :type="messageType"
-              class="mt-4"
-              closable
-              @click:close="message = ''"
-            >
-              {{ message }}
-            </v-alert>
-            
+            <!-- Loading indicator -->
             <v-progress-linear
               v-if="extracting"
               indeterminate
               color="primary"
               class="mt-4"
             ></v-progress-linear>
+            
+            <!-- Message display -->
+            <v-alert
+              v-if="message"
+              :type="messageType"
+              class="mt-4"
+              closable
+            >
+              {{ message }}
+            </v-alert>
           </v-card-text>
         </v-card>
       </v-container>
@@ -280,31 +286,19 @@ export default {
 </template>
 
 <style>
-.v-application {
-  background-color: #f5f5f5;
-}
-
 .comments-container {
   max-height: 300px;
   overflow-y: auto;
-  padding: 8px;
-  background-color: #f9f9f9;
-  border-radius: 4px;
+  padding-right: 8px;
 }
 
 .comment-item {
   padding: 8px;
-  border-bottom: 1px solid #eee;
-}
-
-.comment-item:last-child {
-  border-bottom: none;
+  border-radius: 4px;
+  background-color: #f5f5f5;
 }
 
 .comment-text {
-  white-space: pre-wrap;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  word-break: break-word;
 }
 </style>
