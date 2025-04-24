@@ -49,7 +49,7 @@ filemetadata-modifier/
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/filemetadata-modifier.git
+git clone https://github.com/satishvudata98/filemetadata-modifier.git
 cd filemetadata-modifier
 ```
 
